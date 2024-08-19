@@ -86,32 +86,30 @@ function love.keypressed(k)
   then
     goto skip_direction
   end
+  -- the following section until ::skip_direction:: is a possible bug place
+  HIDDEN_POS = {unpack(NIL_POS)}
   if (k == 'h' or k == 'left') and NIL_POS[2] ~= #GRID[1]
   then
     AXIS = 1
     DIRECTION = 'left'
-    HIDDEN_POS = {unpack(NIL_POS)}
     HIDDEN_POS[2] = HIDDEN_POS[2] + 1
   end
   if (k == 'l' or k == 'right') and NIL_POS[2] ~= 1
   then
     AXIS = 1
     DIRECTION = 'right'
-    HIDDEN_POS = {unpack(NIL_POS)}
     HIDDEN_POS[2] = HIDDEN_POS[2] - 1
   end
   if (k == 'k' or k == 'up') and NIL_POS[1] ~= #GRID
   then
     AXIS = 2
     DIRECTION = 'up'
-    HIDDEN_POS = {unpack(NIL_POS)}
     HIDDEN_POS[1] = HIDDEN_POS[1] + 1
   end
   if (k == 'j' or k == 'down') and NIL_POS[1] ~= 1
   then
     AXIS = 2
     DIRECTION = 'down'
-    HIDDEN_POS = {unpack(NIL_POS)}
     HIDDEN_POS[1] = HIDDEN_POS[1] - 1
   end
   ACTIVE_TILE.start = pixel_pos_from_tile_pos(HIDDEN_POS[1], HIDDEN_POS[2])
