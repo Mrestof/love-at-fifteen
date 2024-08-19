@@ -1,14 +1,23 @@
-SPEED = 150
+FONT = nil
+
+GAME_STATE = 'grid'
 
 DIRECTION = 'none'
 
+SPEED = 150
+
+-- WARN: if you change the default grid, you should also change the way you
+-- shuffle it, because for example if you swap 15 and 0, the current way of
+-- shuffling the grid will produce an unsolvable grid; beats me why, but if
+-- I were to take an educated guess, this is due to the inversion parity,
+-- but the math behind this is too complicated for me, so there we are;
 GRID = {
   {1,  2,  3,  4},
   {5,  6,  7,  8},
   {9,  10, 11, 12},
   {13, 14, 15, 0},
 }
-NIL_POS = {4, 4}
+NIL_POS = {0, 0}
 HIDDEN_POS = {0, 0}
 ACTIVE_TILE = {  -- positions are specified in pixels {x, y}
   current = {0, 0},
@@ -17,6 +26,10 @@ ACTIVE_TILE = {  -- positions are specified in pixels {x, y}
 }
 
 AXIS = 0
+
+WIN_VIDEO = nil
+WIN_VIDEO_PARAMS = {scale = 1, y_pos = 0}
+WIN_TEXT_PARAMS = {limit = 0, y_pos = 0, color_id = 0, color_step = 0.4}
 
 local lg = love.graphics
 
@@ -77,6 +90,22 @@ local function pixel_pos_from_tile_pos(row, col, spacing)
   return {x, y}
 end
 
+local function check_win_status(grid)
+  local prev = -1
+  for row_idx = 1, #grid do
+    for col_idx = 1, #grid[1] do
+      local value = grid[row_idx][col_idx]
+      --print(value, prev)
+      if value > prev or (row_idx == #grid and col_idx == #grid[1]) then
+        prev = value
+      else
+        return false
+      end
+    end
+  end
+  return true
+end
+
 function love.keypressed(k)
   if k == 'escape' or k == 'q'
   then
@@ -121,14 +150,16 @@ end
 
 function love.load()
   print(':::start:::')
+  NIL_POS = locate_nil(GRID)
   math.randomseed(os.time())
   love.window.setMode(#GRID*100, #GRID[1]*100)
-  lg.setNewFont(28)
+  FONT = lg.setNewFont(28)
   shuffle_grid(GRID)
   print_grid(GRID)
+  WIN_VIDEO = lg.newVideo('groove-man-loop10.ogv')
 end
 
-function love.update(dt)
+local function grid_logic(dt)
   if DIRECTION ~= 'none'
   then
     local dp = current_speed(
@@ -154,8 +185,39 @@ function love.update(dt)
       NIL_POS = {unpack(HIDDEN_POS)}
       HIDDEN_POS = {0, 0}
       ACTIVE_TILE.current[AXIS] = ACTIVE_TILE.finish[AXIS]
+      if check_win_status(GRID)
+      then
+        GAME_STATE = 'win_screen'
+        local win_width, win_height = love.window.getMode()
+        local vid_width, vid_height = WIN_VIDEO:getDimensions()
+        local vid_scale = win_width / vid_width
+        WIN_VIDEO_PARAMS.scale = vid_scale
+        WIN_VIDEO_PARAMS.y_pos = win_height - vid_height * vid_scale
+        WIN_TEXT_PARAMS.limit = win_width
+        WIN_TEXT_PARAMS.y_pos = (win_height - (FONT:getHeight() + (vid_height * vid_scale))) / 2
+        WIN_VIDEO:play()
+      end
     end
     print(ACTIVE_TILE.current[1])
+  end
+end
+
+local function rainbow_color(x)
+  local red = (math.sin(x) / 2) + 0.5
+  local green = (math.sin(x + 2*math.pi/3) / 2) + 0.5
+  local blue = (math.sin(x + 4*math.pi/3) / 2) + 0.5
+  return {red, green, blue}
+end
+
+local function win_screen_logic()
+end
+
+function love.update(dt)
+  if GAME_STATE == 'grid' then
+    grid_logic(dt)
+  end
+  if GAME_STATE == 'win_screen' then
+    win_screen_logic()
   end
 end
 
@@ -184,8 +246,36 @@ local function draw_grid(grid, spacing)
   end
 end
 
+local function draw_win_screen()
+  lg.setColor(rainbow_color(WIN_TEXT_PARAMS.color_id))
+  WIN_TEXT_PARAMS.color_id = WIN_TEXT_PARAMS.color_id + WIN_TEXT_PARAMS.color_step
+  lg.printf(
+    'Congratulations,\nyou won!',
+    0,
+    WIN_TEXT_PARAMS.y_pos,
+    WIN_TEXT_PARAMS.limit,
+    'center'
+  )
+  lg.setColor(1, 1, 1)
+  lg.draw(
+    WIN_VIDEO,
+    0,
+    WIN_VIDEO_PARAMS.y_pos,
+    0,
+    WIN_VIDEO_PARAMS.scale,
+    WIN_VIDEO_PARAMS.scale
+  )
+end
+
 function love.draw()
-  draw_grid(GRID)
+  if GAME_STATE == 'grid'
+  then
+    draw_grid(GRID)
+  end
+  if GAME_STATE == 'win_screen'
+  then
+    draw_win_screen()
+  end
 end
 
 function love.quit()
