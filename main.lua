@@ -1,4 +1,4 @@
-SPEED = 85
+SPEED = 150
 
 INPUT_LOCK = false
 DIRECTION = 'none'
@@ -17,6 +17,8 @@ ACTIVE_TILE = {  -- positions are specified in pixels {x, y}
   finish = {0, 0},
 }
 
+AXIS = 0
+
 local lg = love.graphics
 
 -- math for mapping ranges: https://stackoverflow.com/questions/5731863/mapping-a-numeric-range-onto-another
@@ -33,6 +35,7 @@ local function current_speed(x, x0, x1, cutoff)
   local f_end = -cutoff + (((3 * math.pi) / 2) + (2 * math.pi))
   local f_x = map(x, x0, x1, f_start, f_end)
   local speed = (math.sin(f_x) + 1) *  5
+  if x0 > x1 then speed = -speed end
   --print('(sin(x) + 1) * 5', speed)
   return speed
 end
@@ -86,6 +89,7 @@ function love.keypressed(k)
   end
   if (k == 'h' or k == 'left') and NIL_POS[2] ~= #GRID[1]
   then
+    AXIS = 1
     DIRECTION = 'left'
     INPUT_LOCK = true
     HIDDEN_POS = {unpack(NIL_POS)}
@@ -93,6 +97,7 @@ function love.keypressed(k)
   end
   if (k == 'l' or k == 'right') and NIL_POS[2] ~= 1
   then
+    AXIS = 1
     DIRECTION = 'right'
     INPUT_LOCK = true
     HIDDEN_POS = {unpack(NIL_POS)}
@@ -100,6 +105,7 @@ function love.keypressed(k)
   end
   if (k == 'k' or k == 'up') and NIL_POS[1] ~= #GRID
   then
+    AXIS = 2
     DIRECTION = 'up'
     INPUT_LOCK = true
     HIDDEN_POS = {unpack(NIL_POS)}
@@ -107,6 +113,7 @@ function love.keypressed(k)
   end
   if (k == 'j' or k == 'down') and NIL_POS[1] ~= 1
   then
+    AXIS = 2
     DIRECTION = 'down'
     INPUT_LOCK = true
     HIDDEN_POS = {unpack(NIL_POS)}
@@ -126,17 +133,27 @@ function love.load()
   lg.setNewFont(28)
   shuffle_grid(GRID)
   print_grid(GRID)
-  print('nil pos:', table.concat(NIL_POS, ','))
 end
 
 function love.update(dt)
-  if DIRECTION == 'right'
+  if DIRECTION ~= 'none'
   then
     local dp = current_speed(
-      ACTIVE_TILE.current[1], ACTIVE_TILE.start[1], ACTIVE_TILE.finish[1], 0.8
+      ACTIVE_TILE.current[AXIS],
+      ACTIVE_TILE.start[AXIS],
+      ACTIVE_TILE.finish[AXIS],
+      0.8
     ) * SPEED
-    ACTIVE_TILE.current[1] = ACTIVE_TILE.current[1] + dp * dt
-    if ACTIVE_TILE.current[1] > ACTIVE_TILE.finish[1]
+    ACTIVE_TILE.current[AXIS] = ACTIVE_TILE.current[AXIS] + dp * dt
+    local boundary_check
+    if DIRECTION == 'left' or DIRECTION == 'up'
+    then
+      boundary_check = ACTIVE_TILE.current[AXIS] < ACTIVE_TILE.finish[AXIS]
+    elseif DIRECTION == 'right' or DIRECTION == 'down'
+    then
+      boundary_check = ACTIVE_TILE.current[AXIS] > ACTIVE_TILE.finish[AXIS]
+    end
+    if boundary_check
     then
       DIRECTION = 'none'
       INPUT_LOCK = false
@@ -144,63 +161,9 @@ function love.update(dt)
       GRID[HIDDEN_POS[1]][HIDDEN_POS[2]] = 0
       NIL_POS = {unpack(HIDDEN_POS)}
       HIDDEN_POS = {0, 0}
-      ACTIVE_TILE.current[1] = ACTIVE_TILE.finish[1]
+      ACTIVE_TILE.current[AXIS] = ACTIVE_TILE.finish[AXIS]
     end
     print(ACTIVE_TILE.current[1])
-  end
-  if DIRECTION == 'left'
-  then
-    local dp = current_speed(
-      ACTIVE_TILE.current[1], ACTIVE_TILE.start[1], ACTIVE_TILE.finish[1], 0.8
-    ) * SPEED
-    ACTIVE_TILE.current[1] = ACTIVE_TILE.current[1] - dp * dt
-    if ACTIVE_TILE.current[1] < ACTIVE_TILE.finish[1]
-    then
-      DIRECTION = 'none'
-      INPUT_LOCK = false
-      GRID[NIL_POS[1]][NIL_POS[2]] = GRID[HIDDEN_POS[1]][HIDDEN_POS[2]]
-      GRID[HIDDEN_POS[1]][HIDDEN_POS[2]] = 0
-      NIL_POS = {unpack(HIDDEN_POS)}
-      HIDDEN_POS = {0, 0}
-      ACTIVE_TILE.current[1] = ACTIVE_TILE.finish[1]
-    end
-    print(ACTIVE_TILE.current[1])
-  end
-  if DIRECTION == 'up'
-  then
-    local dp = current_speed(
-      ACTIVE_TILE.current[2], ACTIVE_TILE.start[2], ACTIVE_TILE.finish[2], 0.8
-    ) * SPEED
-    ACTIVE_TILE.current[2] = ACTIVE_TILE.current[2] - dp * dt
-    if ACTIVE_TILE.current[2] < ACTIVE_TILE.finish[2]
-    then
-      DIRECTION = 'none'
-      INPUT_LOCK = false
-      GRID[NIL_POS[1]][NIL_POS[2]] = GRID[HIDDEN_POS[1]][HIDDEN_POS[2]]
-      GRID[HIDDEN_POS[1]][HIDDEN_POS[2]] = 0
-      NIL_POS = {unpack(HIDDEN_POS)}
-      HIDDEN_POS = {0, 0}
-      ACTIVE_TILE.current[2] = ACTIVE_TILE.finish[2]
-    end
-    print(ACTIVE_TILE.current[2])
-  end
-  if DIRECTION == 'down'
-  then
-    local dp = current_speed(
-      ACTIVE_TILE.current[2], ACTIVE_TILE.start[2], ACTIVE_TILE.finish[2], 0.8
-    ) * SPEED
-    ACTIVE_TILE.current[2] = ACTIVE_TILE.current[2] + dp * dt
-    if ACTIVE_TILE.current[2] > ACTIVE_TILE.finish[2]
-    then
-      DIRECTION = 'none'
-      INPUT_LOCK = false
-      GRID[NIL_POS[1]][NIL_POS[2]] = GRID[HIDDEN_POS[1]][HIDDEN_POS[2]]
-      GRID[HIDDEN_POS[1]][HIDDEN_POS[2]] = 0
-      NIL_POS = {unpack(HIDDEN_POS)}
-      HIDDEN_POS = {0, 0}
-      ACTIVE_TILE.current[2] = ACTIVE_TILE.finish[2]
-    end
-    print(ACTIVE_TILE.current[2])
   end
 end
 
