@@ -1,6 +1,5 @@
 SPEED = 150
 
-INPUT_LOCK = false
 DIRECTION = 'none'
 
 GRID = {
@@ -83,7 +82,7 @@ function love.keypressed(k)
   then
     love.event.quit()
   end
-  if INPUT_LOCK
+  if DIRECTION ~= 'none'
   then
     goto skip_direction
   end
@@ -91,7 +90,6 @@ function love.keypressed(k)
   then
     AXIS = 1
     DIRECTION = 'left'
-    INPUT_LOCK = true
     HIDDEN_POS = {unpack(NIL_POS)}
     HIDDEN_POS[2] = HIDDEN_POS[2] + 1
   end
@@ -99,7 +97,6 @@ function love.keypressed(k)
   then
     AXIS = 1
     DIRECTION = 'right'
-    INPUT_LOCK = true
     HIDDEN_POS = {unpack(NIL_POS)}
     HIDDEN_POS[2] = HIDDEN_POS[2] - 1
   end
@@ -107,7 +104,6 @@ function love.keypressed(k)
   then
     AXIS = 2
     DIRECTION = 'up'
-    INPUT_LOCK = true
     HIDDEN_POS = {unpack(NIL_POS)}
     HIDDEN_POS[1] = HIDDEN_POS[1] + 1
   end
@@ -115,7 +111,6 @@ function love.keypressed(k)
   then
     AXIS = 2
     DIRECTION = 'down'
-    INPUT_LOCK = true
     HIDDEN_POS = {unpack(NIL_POS)}
     HIDDEN_POS[1] = HIDDEN_POS[1] - 1
   end
@@ -156,7 +151,6 @@ function love.update(dt)
     if boundary_check
     then
       DIRECTION = 'none'
-      INPUT_LOCK = false
       GRID[NIL_POS[1]][NIL_POS[2]] = GRID[HIDDEN_POS[1]][HIDDEN_POS[2]]
       GRID[HIDDEN_POS[1]][HIDDEN_POS[2]] = 0
       NIL_POS = {unpack(HIDDEN_POS)}
