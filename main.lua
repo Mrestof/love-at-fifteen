@@ -1,6 +1,3 @@
-XS = 10
-X = XS
-XF = 500
 SPEED = 85
 
 INPUT_LOCK = false
@@ -14,7 +11,7 @@ GRID = {
 }
 NIL_POS = {4, 4}
 HIDDEN_POS = {0, 0}
-ACTIVE_TILE = {
+ACTIVE_TILE = {  -- positions are specified in pixels {x, y}
   current = {0, 0},
   start = {0, 0},
   finish = {0, 0},
@@ -72,7 +69,7 @@ local function print_grid(grid)
 end
 
 local function pixel_pos_from_tile_pos(row, col, spacing)
-  spacing = spacing or 10
+  spacing = spacing or 5
   local x = (col - 1) * 100 + spacing
   local y = (row - 1) * 100 + spacing
   return {x, y}
@@ -93,34 +90,31 @@ function love.keypressed(k)
     INPUT_LOCK = true
     HIDDEN_POS = {unpack(NIL_POS)}
     HIDDEN_POS[2] = HIDDEN_POS[2] + 1
-    ACTIVE_TILE.start = pixel_pos_from_tile_pos(HIDDEN_POS[1], HIDDEN_POS[2])
-    ACTIVE_TILE.finish = pixel_pos_from_tile_pos(NIL_POS[1], NIL_POS[2])
-    ACTIVE_TILE.current = {unpack(ACTIVE_TILE.start)}
-    print(table.concat(ACTIVE_TILE.start, ','))
-    print(table.concat(ACTIVE_TILE.finish, ','))
-    print(table.concat(ACTIVE_TILE.current, ','))
   end
   if (k == 'l' or k == 'right') and NIL_POS[2] ~= 1
   then
     DIRECTION = 'right'
     INPUT_LOCK = true
-    HIDDEN_POS = NIL_POS
+    HIDDEN_POS = {unpack(NIL_POS)}
     HIDDEN_POS[2] = HIDDEN_POS[2] - 1
   end
   if (k == 'k' or k == 'up') and NIL_POS[1] ~= #GRID
   then
     DIRECTION = 'up'
     INPUT_LOCK = true
-    HIDDEN_POS = NIL_POS
+    HIDDEN_POS = {unpack(NIL_POS)}
     HIDDEN_POS[1] = HIDDEN_POS[1] + 1
   end
   if (k == 'j' or k == 'down') and NIL_POS[1] ~= 1
   then
     DIRECTION = 'down'
     INPUT_LOCK = true
-    HIDDEN_POS = NIL_POS
+    HIDDEN_POS = {unpack(NIL_POS)}
     HIDDEN_POS[1] = HIDDEN_POS[1] - 1
   end
+  ACTIVE_TILE.start = pixel_pos_from_tile_pos(HIDDEN_POS[1], HIDDEN_POS[2])
+  ACTIVE_TILE.finish = pixel_pos_from_tile_pos(NIL_POS[1], NIL_POS[2])
+  ACTIVE_TILE.current = {unpack(ACTIVE_TILE.start)}
   ::skip_direction::
   print(DIRECTION)
 end
@@ -136,42 +130,97 @@ function love.load()
 end
 
 function love.update(dt)
-  --love.timer.sleep(0.08)
-  --if DIRECTION == 'right'
-  --then
-  --  local dx = current_speed(X, XS, XF, 0.8) * SPEED
-  --  X = X + dx * dt
-  --  if X >= XF
-  --  then
-  --    DIRECTION = 'none'
-  --    X = XF
-  --  end
-  --end
-  --if DIRECTION == 'left'
-  --then
-  --  local dx = current_speed(X, XS, XF, 0.8) * SPEED
-  --  X = X - dx * dt
-  --  if X <= XS
-  --  then
-  --    DIRECTION = 'none'
-  --    X = XS
-  --  end
-  --end
+  if DIRECTION == 'right'
+  then
+    local dp = current_speed(
+      ACTIVE_TILE.current[1], ACTIVE_TILE.start[1], ACTIVE_TILE.finish[1], 0.8
+    ) * SPEED
+    ACTIVE_TILE.current[1] = ACTIVE_TILE.current[1] + dp * dt
+    if ACTIVE_TILE.current[1] > ACTIVE_TILE.finish[1]
+    then
+      DIRECTION = 'none'
+      INPUT_LOCK = false
+      GRID[NIL_POS[1]][NIL_POS[2]] = GRID[HIDDEN_POS[1]][HIDDEN_POS[2]]
+      GRID[HIDDEN_POS[1]][HIDDEN_POS[2]] = 0
+      NIL_POS = {unpack(HIDDEN_POS)}
+      HIDDEN_POS = {0, 0}
+      ACTIVE_TILE.current[1] = ACTIVE_TILE.finish[1]
+    end
+    print(ACTIVE_TILE.current[1])
+  end
+  if DIRECTION == 'left'
+  then
+    local dp = current_speed(
+      ACTIVE_TILE.current[1], ACTIVE_TILE.start[1], ACTIVE_TILE.finish[1], 0.8
+    ) * SPEED
+    ACTIVE_TILE.current[1] = ACTIVE_TILE.current[1] - dp * dt
+    if ACTIVE_TILE.current[1] < ACTIVE_TILE.finish[1]
+    then
+      DIRECTION = 'none'
+      INPUT_LOCK = false
+      GRID[NIL_POS[1]][NIL_POS[2]] = GRID[HIDDEN_POS[1]][HIDDEN_POS[2]]
+      GRID[HIDDEN_POS[1]][HIDDEN_POS[2]] = 0
+      NIL_POS = {unpack(HIDDEN_POS)}
+      HIDDEN_POS = {0, 0}
+      ACTIVE_TILE.current[1] = ACTIVE_TILE.finish[1]
+    end
+    print(ACTIVE_TILE.current[1])
+  end
+  if DIRECTION == 'up'
+  then
+    local dp = current_speed(
+      ACTIVE_TILE.current[2], ACTIVE_TILE.start[2], ACTIVE_TILE.finish[2], 0.8
+    ) * SPEED
+    ACTIVE_TILE.current[2] = ACTIVE_TILE.current[2] - dp * dt
+    if ACTIVE_TILE.current[2] < ACTIVE_TILE.finish[2]
+    then
+      DIRECTION = 'none'
+      INPUT_LOCK = false
+      GRID[NIL_POS[1]][NIL_POS[2]] = GRID[HIDDEN_POS[1]][HIDDEN_POS[2]]
+      GRID[HIDDEN_POS[1]][HIDDEN_POS[2]] = 0
+      NIL_POS = {unpack(HIDDEN_POS)}
+      HIDDEN_POS = {0, 0}
+      ACTIVE_TILE.current[2] = ACTIVE_TILE.finish[2]
+    end
+    print(ACTIVE_TILE.current[2])
+  end
+  if DIRECTION == 'down'
+  then
+    local dp = current_speed(
+      ACTIVE_TILE.current[2], ACTIVE_TILE.start[2], ACTIVE_TILE.finish[2], 0.8
+    ) * SPEED
+    ACTIVE_TILE.current[2] = ACTIVE_TILE.current[2] + dp * dt
+    if ACTIVE_TILE.current[2] > ACTIVE_TILE.finish[2]
+    then
+      DIRECTION = 'none'
+      INPUT_LOCK = false
+      GRID[NIL_POS[1]][NIL_POS[2]] = GRID[HIDDEN_POS[1]][HIDDEN_POS[2]]
+      GRID[HIDDEN_POS[1]][HIDDEN_POS[2]] = 0
+      NIL_POS = {unpack(HIDDEN_POS)}
+      HIDDEN_POS = {0, 0}
+      ACTIVE_TILE.current[2] = ACTIVE_TILE.finish[2]
+    end
+    print(ACTIVE_TILE.current[2])
+  end
 end
 
 local function draw_grid(grid, spacing)
-  spacing = spacing or 10
+  spacing = spacing or 5
   for row_idx = 1, #grid, 1 do
     for col_idx = 1, #grid[1], 1 do
       local value = grid[row_idx][col_idx]
-      if
-        value == 0
-        or row_idx == HIDDEN_POS[1] and col_idx == HIDDEN_POS[2]
+      if value == 0
       then
         goto continue
       end
+      local x, y = 0, 0
+      if row_idx == HIDDEN_POS[1] and col_idx == HIDDEN_POS[2]
+      then
+        x, y = unpack(ACTIVE_TILE.current)
+      else
+        x, y = unpack(pixel_pos_from_tile_pos(row_idx, col_idx, spacing))
+      end
       lg.setColor(love.math.colorFromBytes(0x7d, 0x60, 0xca))
-      local x, y = unpack(pixel_pos_from_tile_pos(row_idx, col_idx, spacing))
       lg.rectangle('fill', x, y, 100 - spacing * 2, 100 - spacing * 2)
       lg.setColor(1, 1, 1)
       lg.print(value, x+4, y+2)
@@ -181,7 +230,7 @@ local function draw_grid(grid, spacing)
 end
 
 function love.draw()
-  draw_grid(GRID, 5)
+  draw_grid(GRID)
 end
 
 function love.quit()
