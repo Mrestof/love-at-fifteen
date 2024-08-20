@@ -3,14 +3,11 @@ MainFont = nil
 GameState = 'grid'
 
 Direction = 'none'
+Directions = {'left', 'right', 'up', 'down'}
 
 Speed = 150
+ShuffleAmnt = 1000
 
--- WARN: if you change the default grid, you should also change the way you
--- shuffle it, because for example if you swap 15 and 0, the current way of
--- shuffling the grid will produce an unsolvable grid; beats me why, but if
--- I were to take an educated guess, this is due to the inversion parity,
--- but the math behind this is too complicated for me, so there we are;
 Grid = {
   {1,  2,  3,  4},
   {5,  6,  7,  8},
@@ -63,7 +60,35 @@ local function locate_nil(grid)
   end
 end
 
-local function shuffle_grid(grid)
+local function simple_move(grid, direction)
+  --local newNilPos = {unpack(NilPos)}
+  if direction == 'left' and NilPos[2] ~= #Grid[1]
+  then
+    grid[NilPos[1]][NilPos[2]] = grid[NilPos[1]][NilPos[2]+1]
+    grid[NilPos[1]][NilPos[2]+1] = 0
+    NilPos[2] = NilPos[2] + 1
+  end
+  if direction == 'right' and NilPos[2] ~= 1
+  then
+    grid[NilPos[1]][NilPos[2]] = grid[NilPos[1]][NilPos[2]-1]
+    grid[NilPos[1]][NilPos[2]-1] = 0
+    NilPos[2] = NilPos[2] - 1
+  end
+  if direction == 'up' and NilPos[1] ~= #Grid
+  then
+    grid[NilPos[1]][NilPos[2]] = grid[NilPos[1]+1][NilPos[2]]
+    grid[NilPos[1]+1][NilPos[2]] = 0
+    NilPos[1] = NilPos[1] + 1
+  end
+  if direction == 'down' and NilPos[1] ~= 1
+  then
+    grid[NilPos[1]][NilPos[2]] = grid[NilPos[1]-1][NilPos[2]]
+    grid[NilPos[1]-1][NilPos[2]] = 0
+    NilPos[1] = NilPos[1] - 1
+  end
+end
+
+local function random_shuffle_grid(grid)
   for _ = 1, (#grid + #grid[1]) * 2 do
     local row_a = math.random(#grid)
     local row_b = math.random(#grid)
@@ -80,6 +105,16 @@ end
 local function print_grid(grid)
   for row_idx = 1, #grid, 1 do
     print(table.concat(grid[row_idx], '\t'))
+  end
+end
+
+local function simulated_shuffle_grid(grid)
+  NilPos = locate_nil(grid)
+  local direction
+  for _ = 1, ShuffleAmnt do
+    direction = Directions[math.random(#Directions)]
+    simple_move(grid, direction)
+    print(direction)
   end
 end
 
@@ -154,7 +189,7 @@ function love.load()
   math.randomseed(os.time())
   love.window.setMode(#Grid*100, #Grid[1]*100)
   MainFont = lg.setNewFont(28)
-  shuffle_grid(Grid)
+  simulated_shuffle_grid(Grid)
   print_grid(Grid)
   WinVideo = lg.newVideo('groove-man-loop10.ogv')
 end
