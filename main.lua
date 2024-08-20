@@ -114,7 +114,7 @@ local function simulated_shuffle_grid(grid)
   for _ = 1, ShuffleAmnt do
     direction = Directions[math.random(#Directions)]
     simple_move(grid, direction)
-    print(direction)
+    --print(direction)
   end
 end
 
