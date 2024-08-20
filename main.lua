@@ -1,39 +1,39 @@
-FONT = nil
+MainFont = nil
 
-GAME_STATE = 'grid'
+GameState = 'grid'
 
-DIRECTION = 'none'
+Direction = 'none'
 
-SPEED = 150
+Speed = 150
 
 -- WARN: if you change the default grid, you should also change the way you
 -- shuffle it, because for example if you swap 15 and 0, the current way of
 -- shuffling the grid will produce an unsolvable grid; beats me why, but if
 -- I were to take an educated guess, this is due to the inversion parity,
 -- but the math behind this is too complicated for me, so there we are;
-GRID = {
+Grid = {
   {1,  2,  3,  4},
   {5,  6,  7,  8},
   {9,  10, 11, 12},
   {13, 14, 15, 0},
 }
-NIL_POS = {0, 0}
-HIDDEN_POS = {0, 0}
-ACTIVE_TILE = {  -- positions are specified in pixels {x, y}
+NilPos = {0, 0}
+HiddenPos = {0, 0}
+ActiveTile = {  -- positions are specified in pixels {x, y}
   current = {0, 0},
   start = {0, 0},
   finish = {0, 0},
 }
 
-AXIS = 0
+Axis = 0
 
-WIN_VIDEO = nil
-WIN_VIDEO_PARAMS = {scale = 1, y_pos = 0}
-WIN_TEXT_PARAMS = {limit = 0, y_pos = 0, color_id = 0, color_step = 0.4}
+WinVideo = nil
+WinVideoParams = {scale = 1, y_pos = 0}
+WinTextParams = {limit = 0, y_pos = 0, color_id = 0, color_step = 0.4}
 
 local lg = love.graphics
 
--- math for mapping ranges: https://stackoverflow.com/questions/5731863/mapping-a-numeric-range-onto-another
+-- math for mapping ranges: https://stackoverflow.com/q/5731863
 local function map(input, input_start, input_end, output_start, output_end)
   local output = output_start + (
     (output_end - output_start) / (input_end - input_start)
@@ -74,7 +74,7 @@ local function shuffle_grid(grid)
     grid[row_a][col_a] = val_b
     grid[row_b][col_b] = val_a
   end
-  NIL_POS = locate_nil(grid)
+  NilPos = locate_nil(grid)
 end
 
 local function print_grid(grid)
@@ -111,94 +111,96 @@ function love.keypressed(k)
   then
     love.event.quit()
   end
-  if DIRECTION ~= 'none'
+  if Direction ~= 'none'
   then
     goto skip_direction
   end
   -- the following section until ::skip_direction:: is a possible bug place
-  HIDDEN_POS = {unpack(NIL_POS)}
-  if (k == 'h' or k == 'left') and NIL_POS[2] ~= #GRID[1]
+  HiddenPos = {unpack(NilPos)}
+  if (k == 'h' or k == 'left') and NilPos[2] ~= #Grid[1]
   then
-    AXIS = 1
-    DIRECTION = 'left'
-    HIDDEN_POS[2] = HIDDEN_POS[2] + 1
+    Axis = 1
+    Direction = 'left'
+    HiddenPos[2] = HiddenPos[2] + 1
   end
-  if (k == 'l' or k == 'right') and NIL_POS[2] ~= 1
+  if (k == 'l' or k == 'right') and NilPos[2] ~= 1
   then
-    AXIS = 1
-    DIRECTION = 'right'
-    HIDDEN_POS[2] = HIDDEN_POS[2] - 1
+    Axis = 1
+    Direction = 'right'
+    HiddenPos[2] = HiddenPos[2] - 1
   end
-  if (k == 'k' or k == 'up') and NIL_POS[1] ~= #GRID
+  if (k == 'k' or k == 'up') and NilPos[1] ~= #Grid
   then
-    AXIS = 2
-    DIRECTION = 'up'
-    HIDDEN_POS[1] = HIDDEN_POS[1] + 1
+    Axis = 2
+    Direction = 'up'
+    HiddenPos[1] = HiddenPos[1] + 1
   end
-  if (k == 'j' or k == 'down') and NIL_POS[1] ~= 1
+  if (k == 'j' or k == 'down') and NilPos[1] ~= 1
   then
-    AXIS = 2
-    DIRECTION = 'down'
-    HIDDEN_POS[1] = HIDDEN_POS[1] - 1
+    Axis = 2
+    Direction = 'down'
+    HiddenPos[1] = HiddenPos[1] - 1
   end
-  ACTIVE_TILE.start = pixel_pos_from_tile_pos(HIDDEN_POS[1], HIDDEN_POS[2])
-  ACTIVE_TILE.finish = pixel_pos_from_tile_pos(NIL_POS[1], NIL_POS[2])
-  ACTIVE_TILE.current = {unpack(ACTIVE_TILE.start)}
+  ActiveTile.start = pixel_pos_from_tile_pos(HiddenPos[1], HiddenPos[2])
+  ActiveTile.finish = pixel_pos_from_tile_pos(NilPos[1], NilPos[2])
+  ActiveTile.current = {unpack(ActiveTile.start)}
   ::skip_direction::
-  print(DIRECTION)
+  print(Direction)
 end
 
 function love.load()
   print(':::start:::')
-  NIL_POS = locate_nil(GRID)
+  NilPos = locate_nil(Grid)
   math.randomseed(os.time())
-  love.window.setMode(#GRID*100, #GRID[1]*100)
-  FONT = lg.setNewFont(28)
-  shuffle_grid(GRID)
-  print_grid(GRID)
-  WIN_VIDEO = lg.newVideo('groove-man-loop10.ogv')
+  love.window.setMode(#Grid*100, #Grid[1]*100)
+  MainFont = lg.setNewFont(28)
+  shuffle_grid(Grid)
+  print_grid(Grid)
+  WinVideo = lg.newVideo('groove-man-loop10.ogv')
 end
 
 local function grid_logic(dt)
-  if DIRECTION ~= 'none'
+  if Direction ~= 'none'
   then
     local dp = current_speed(
-      ACTIVE_TILE.current[AXIS],
-      ACTIVE_TILE.start[AXIS],
-      ACTIVE_TILE.finish[AXIS],
+      ActiveTile.current[Axis],
+      ActiveTile.start[Axis],
+      ActiveTile.finish[Axis],
       0.8
-    ) * SPEED
-    ACTIVE_TILE.current[AXIS] = ACTIVE_TILE.current[AXIS] + dp * dt
+    ) * Speed
+    ActiveTile.current[Axis] = ActiveTile.current[Axis] + dp * dt
     local boundary_check
-    if DIRECTION == 'left' or DIRECTION == 'up'
+    if Direction == 'left' or Direction == 'up'
     then
-      boundary_check = ACTIVE_TILE.current[AXIS] < ACTIVE_TILE.finish[AXIS]
-    elseif DIRECTION == 'right' or DIRECTION == 'down'
+      boundary_check = ActiveTile.current[Axis] < ActiveTile.finish[Axis]
+    elseif Direction == 'right' or Direction == 'down'
     then
-      boundary_check = ACTIVE_TILE.current[AXIS] > ACTIVE_TILE.finish[AXIS]
+      boundary_check = ActiveTile.current[Axis] > ActiveTile.finish[Axis]
     end
     if boundary_check
     then
-      DIRECTION = 'none'
-      GRID[NIL_POS[1]][NIL_POS[2]] = GRID[HIDDEN_POS[1]][HIDDEN_POS[2]]
-      GRID[HIDDEN_POS[1]][HIDDEN_POS[2]] = 0
-      NIL_POS = {unpack(HIDDEN_POS)}
-      HIDDEN_POS = {0, 0}
-      ACTIVE_TILE.current[AXIS] = ACTIVE_TILE.finish[AXIS]
-      if check_win_status(GRID)
+      Direction = 'none'
+      Grid[NilPos[1]][NilPos[2]] = Grid[HiddenPos[1]][HiddenPos[2]]
+      Grid[HiddenPos[1]][HiddenPos[2]] = 0
+      NilPos = {unpack(HiddenPos)}
+      HiddenPos = {0, 0}
+      ActiveTile.current[Axis] = ActiveTile.finish[Axis]
+      if check_win_status(Grid)
       then
-        GAME_STATE = 'win_screen'
+        GameState = 'win_screen'
         local win_width, win_height = love.window.getMode()
-        local vid_width, vid_height = WIN_VIDEO:getDimensions()
+        local vid_width, vid_height = WinVideo:getDimensions()
         local vid_scale = win_width / vid_width
-        WIN_VIDEO_PARAMS.scale = vid_scale
-        WIN_VIDEO_PARAMS.y_pos = win_height - vid_height * vid_scale
-        WIN_TEXT_PARAMS.limit = win_width
-        WIN_TEXT_PARAMS.y_pos = (win_height - (FONT:getHeight() + (vid_height * vid_scale))) / 2
-        WIN_VIDEO:play()
+        WinVideoParams.scale = vid_scale
+        WinVideoParams.y_pos = win_height - vid_height * vid_scale
+        WinTextParams.limit = win_width
+        WinTextParams.y_pos = (
+          win_height - (MainFont:getHeight() + (vid_height * vid_scale))
+        ) / 2
+        WinVideo:play()
       end
     end
-    print(ACTIVE_TILE.current[1])
+    print(ActiveTile.current[1])
   end
 end
 
@@ -213,10 +215,10 @@ local function win_screen_logic()
 end
 
 function love.update(dt)
-  if GAME_STATE == 'grid' then
+  if GameState == 'grid' then
     grid_logic(dt)
   end
-  if GAME_STATE == 'win_screen' then
+  if GameState == 'win_screen' then
     win_screen_logic()
   end
 end
@@ -231,9 +233,9 @@ local function draw_grid(grid, spacing)
         goto continue
       end
       local x, y = 0, 0
-      if row_idx == HIDDEN_POS[1] and col_idx == HIDDEN_POS[2]
+      if row_idx == HiddenPos[1] and col_idx == HiddenPos[2]
       then
-        x, y = unpack(ACTIVE_TILE.current)
+        x, y = unpack(ActiveTile.current)
       else
         x, y = unpack(pixel_pos_from_tile_pos(row_idx, col_idx, spacing))
       end
@@ -247,32 +249,34 @@ local function draw_grid(grid, spacing)
 end
 
 local function draw_win_screen()
-  lg.setColor(rainbow_color(WIN_TEXT_PARAMS.color_id))
-  WIN_TEXT_PARAMS.color_id = WIN_TEXT_PARAMS.color_id + WIN_TEXT_PARAMS.color_step
+  lg.setColor(rainbow_color(WinTextParams.color_id))
+  WinTextParams.color_id = (
+    WinTextParams.color_id + WinTextParams.color_step
+  )
   lg.printf(
     'Congratulations,\nyou won!',
     0,
-    WIN_TEXT_PARAMS.y_pos,
-    WIN_TEXT_PARAMS.limit,
+    WinTextParams.y_pos,
+    WinTextParams.limit,
     'center'
   )
   lg.setColor(1, 1, 1)
   lg.draw(
-    WIN_VIDEO,
+    WinVideo,
     0,
-    WIN_VIDEO_PARAMS.y_pos,
+    WinVideoParams.y_pos,
     0,
-    WIN_VIDEO_PARAMS.scale,
-    WIN_VIDEO_PARAMS.scale
+    WinVideoParams.scale,
+    WinVideoParams.scale
   )
 end
 
 function love.draw()
-  if GAME_STATE == 'grid'
+  if GameState == 'grid'
   then
-    draw_grid(GRID)
+    draw_grid(Grid)
   end
-  if GAME_STATE == 'win_screen'
+  if GameState == 'win_screen'
   then
     draw_win_screen()
   end
