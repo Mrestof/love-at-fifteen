@@ -200,7 +200,7 @@ local function grid_logic(dt)
         WinVideo:play()
       end
     end
-    print(ActiveTile.current[1])
+    --print(ActiveTile.current[1])
   end
 end
 
