@@ -191,7 +191,7 @@ function love.load()
   MainFont = lg.setNewFont(28)
   simulated_shuffle_grid(Grid)
   print_grid(Grid)
-  WinVideo = lg.newVideo('groove-man-loop10.ogv')
+  WinVideo = lg.newVideo('gfx/groove-man-loop10.ogv')
 end
 
 local function grid_logic(dt)
