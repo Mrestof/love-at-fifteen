@@ -2,6 +2,9 @@ Love at Fifteen - a simple game written in Lua as my first game project,
 using LÖVE, which implements the simple 15 puzzle.
 
 
+Getting LÖVE:
+  https://www.love2d.org/
+
 Building for your platform:
   https://www.love2d.org/wiki/Game_Distribution
 
@@ -9,11 +12,9 @@ Building for your platform:
 Running from source:
   `love ./`
 
-
 Controls, two options:
   - arrows
   - vim-like motions (hjkl)
-
 
 Goal of the game:
   In order to solve the puzzle, you need to order all the tiles correctly, so
