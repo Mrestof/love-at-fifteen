@@ -146,40 +146,38 @@ function love.keypressed(k)
   then
     love.event.quit()
   end
-  if Direction ~= 'none'
+  if Direction == 'none'
   then
-    goto skip_direction
+    -- the section in this if block is a possible bug place
+    HiddenPos = {unpack(NilPos)}
+    if (k == 'h' or k == 'left') and NilPos[2] ~= #Grid[1]
+    then
+      Axis = 1
+      Direction = 'left'
+      HiddenPos[2] = HiddenPos[2] + 1
+    end
+    if (k == 'l' or k == 'right') and NilPos[2] ~= 1
+    then
+      Axis = 1
+      Direction = 'right'
+      HiddenPos[2] = HiddenPos[2] - 1
+    end
+    if (k == 'k' or k == 'up') and NilPos[1] ~= #Grid
+    then
+      Axis = 2
+      Direction = 'up'
+      HiddenPos[1] = HiddenPos[1] + 1
+    end
+    if (k == 'j' or k == 'down') and NilPos[1] ~= 1
+    then
+      Axis = 2
+      Direction = 'down'
+      HiddenPos[1] = HiddenPos[1] - 1
+    end
+    ActiveTile.start = pixel_pos_from_tile_pos(HiddenPos[1], HiddenPos[2])
+    ActiveTile.finish = pixel_pos_from_tile_pos(NilPos[1], NilPos[2])
+    ActiveTile.current = {unpack(ActiveTile.start)}
   end
-  -- the following section until ::skip_direction:: is a possible bug place
-  HiddenPos = {unpack(NilPos)}
-  if (k == 'h' or k == 'left') and NilPos[2] ~= #Grid[1]
-  then
-    Axis = 1
-    Direction = 'left'
-    HiddenPos[2] = HiddenPos[2] + 1
-  end
-  if (k == 'l' or k == 'right') and NilPos[2] ~= 1
-  then
-    Axis = 1
-    Direction = 'right'
-    HiddenPos[2] = HiddenPos[2] - 1
-  end
-  if (k == 'k' or k == 'up') and NilPos[1] ~= #Grid
-  then
-    Axis = 2
-    Direction = 'up'
-    HiddenPos[1] = HiddenPos[1] + 1
-  end
-  if (k == 'j' or k == 'down') and NilPos[1] ~= 1
-  then
-    Axis = 2
-    Direction = 'down'
-    HiddenPos[1] = HiddenPos[1] - 1
-  end
-  ActiveTile.start = pixel_pos_from_tile_pos(HiddenPos[1], HiddenPos[2])
-  ActiveTile.finish = pixel_pos_from_tile_pos(NilPos[1], NilPos[2])
-  ActiveTile.current = {unpack(ActiveTile.start)}
-  ::skip_direction::
   print(Direction)
 end
 
@@ -263,22 +261,20 @@ local function draw_grid(grid, spacing)
   for row_idx = 1, #grid, 1 do
     for col_idx = 1, #grid[1], 1 do
       local value = grid[row_idx][col_idx]
-      if value == 0
+      if value ~= 0
       then
-        goto continue
+        local x, y = 0, 0
+        if row_idx == HiddenPos[1] and col_idx == HiddenPos[2]
+        then
+          x, y = unpack(ActiveTile.current)
+        else
+          x, y = unpack(pixel_pos_from_tile_pos(row_idx, col_idx, spacing))
+        end
+        lg.setColor(love.math.colorFromBytes(0x7d, 0x60, 0xca))
+        lg.rectangle('fill', x, y, 100 - spacing * 2, 100 - spacing * 2)
+        lg.setColor(1, 1, 1)
+        lg.print(value, x+4, y+2)
       end
-      local x, y = 0, 0
-      if row_idx == HiddenPos[1] and col_idx == HiddenPos[2]
-      then
-        x, y = unpack(ActiveTile.current)
-      else
-        x, y = unpack(pixel_pos_from_tile_pos(row_idx, col_idx, spacing))
-      end
-      lg.setColor(love.math.colorFromBytes(0x7d, 0x60, 0xca))
-      lg.rectangle('fill', x, y, 100 - spacing * 2, 100 - spacing * 2)
-      lg.setColor(1, 1, 1)
-      lg.print(value, x+4, y+2)
-      ::continue::
     end
   end
 end
