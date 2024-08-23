@@ -1,3 +1,5 @@
+local Animation = require('animation')
+
 MainFont = nil
 
 GameState = 'grid'
@@ -24,8 +26,15 @@ ActiveTile = {  -- positions are specified in pixels {x, y}
 
 Axis = 0
 
-WinVideo = nil
-WinVideoParams = {scale = 1, y_pos = 0}
+WinMediaType = 'animation'
+if WinMediaType == 'animation' then
+  WinAnim = nil
+  WinAnimParams = {scale = 1, y_pos = 0, speed = 20}
+  WinAudio = nil
+elseif WinMediaType == 'video' then
+  WinVideo = nil
+  WinVideoParams = {scale = 1, y_pos = 0}
+end
 WinTextParams = {limit = 0, y_pos = 0, color_id = 0, color_step = 0.4}
 
 local lg = love.graphics
@@ -189,7 +198,18 @@ function love.load()
   MainFont = lg.setNewFont(28)
   simulated_shuffle_grid(Grid)
   print_grid(Grid)
-  WinVideo = lg.newVideo('gfx/groove-man-loop10.ogv')
+  if WinMediaType == 'animation' then
+    WinAnim = Animation:new(
+      {'gfx/up.jpg','gfx/mid.jpg','gfx/low.jpg'},
+      WinAnimParams.speed
+    )
+    WinAudio = love.audio.newSource(
+      'gfx/groove-audio-full-low-quality.ogg',
+      'stream'
+    )
+  elseif WinMediaType == 'video' then
+    WinVideo = lg.newVideo('gfx/groove-man-loop10.ogv')
+  end
 end
 
 local function grid_logic(dt)
@@ -222,15 +242,26 @@ local function grid_logic(dt)
       then
         GameState = 'win_screen'
         local win_width, win_height = love.window.getMode()
-        local vid_width, vid_height = WinVideo:getDimensions()
-        local vid_scale = win_width / vid_width
-        WinVideoParams.scale = vid_scale
-        WinVideoParams.y_pos = win_height - vid_height * vid_scale
+        local MediaPieceParams
+        local media_width, media_height, media_scale
+        if WinMediaType == 'animation' then
+          media_width, media_height = WinAnim:getDimensions()
+          MediaPieceParams = WinAnimParams
+          WinAudio:play()
+        elseif WinMediaType == 'video' then
+          media_width, media_height = WinVideo.getDimensions()
+          MediaPieceParams = WinVideoParams
+          WinVideo:play()
+        end
+        print(media_width)
+        media_scale = win_width / media_width
+        print(media_scale)
+        MediaPieceParams.scale = media_scale
+        MediaPieceParams.y_pos = win_height - media_height * media_scale
         WinTextParams.limit = win_width
         WinTextParams.y_pos = (
-          win_height - (MainFont:getHeight() + (vid_height * vid_scale))
+          win_height - (MainFont:getHeight() + (media_height * media_scale))
         ) / 2
-        WinVideo:play()
       end
     end
     --print(ActiveTile.current[1])
@@ -244,7 +275,8 @@ local function rainbow_color(x)
   return {red, green, blue}
 end
 
-local function win_screen_logic()
+local function win_screen_logic(dt)
+  WinAnim:update(dt)
 end
 
 function love.update(dt)
@@ -252,7 +284,7 @@ function love.update(dt)
     grid_logic(dt)
   end
   if GameState == 'win_screen' then
-    win_screen_logic()
+    win_screen_logic(dt)
   end
 end
 
@@ -270,6 +302,7 @@ local function draw_grid(grid, spacing)
         else
           x, y = unpack(pixel_pos_from_tile_pos(row_idx, col_idx, spacing))
         end
+        -- 7d60ca
         lg.setColor(love.math.colorFromBytes(0x7d, 0x60, 0xca))
         lg.rectangle('fill', x, y, 100 - spacing * 2, 100 - spacing * 2)
         lg.setColor(1, 1, 1)
@@ -292,14 +325,15 @@ local function draw_win_screen()
     'center'
   )
   lg.setColor(1, 1, 1)
-  lg.draw(
-    WinVideo,
-    0,
-    WinVideoParams.y_pos,
-    0,
-    WinVideoParams.scale,
-    WinVideoParams.scale
-  )
+  WinAnim:draw(0, WinAnimParams.y_pos, 0,  WinAnimParams.scale)
+  -- lg.draw(
+  --   WinVideo,
+  --   0,
+  --   WinVideoParams.y_pos,
+  --   0,
+  --   WinVideoParams.scale,
+  --   WinVideoParams.scale
+  -- )
 end
 
 function love.draw()
