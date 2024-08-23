@@ -12,7 +12,7 @@ Building for your platform:
 Running from source:
   `love ./`
 
-Controls, two options:
+Control options:
   - arrows
   - numpad arrows (or 2468)
   - vim-like motions (hjkl)
