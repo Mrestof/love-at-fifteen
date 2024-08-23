@@ -150,46 +150,6 @@ local function check_win_status(grid)
   return true
 end
 
-function love.keypressed(k)
-  if k == 'escape' or k == 'q'
-  then
-    love.event.quit()
-  end
-  if Direction == 'none'
-  then
-    -- the section in this if block is a possible bug place
-    HiddenPos = {unpack(NilPos)}
-    if (k == 'h' or k == 'left') and NilPos[2] ~= #Grid[1]
-    then
-      Axis = 1
-      Direction = 'left'
-      HiddenPos[2] = HiddenPos[2] + 1
-    end
-    if (k == 'l' or k == 'right') and NilPos[2] ~= 1
-    then
-      Axis = 1
-      Direction = 'right'
-      HiddenPos[2] = HiddenPos[2] - 1
-    end
-    if (k == 'k' or k == 'up') and NilPos[1] ~= #Grid
-    then
-      Axis = 2
-      Direction = 'up'
-      HiddenPos[1] = HiddenPos[1] + 1
-    end
-    if (k == 'j' or k == 'down') and NilPos[1] ~= 1
-    then
-      Axis = 2
-      Direction = 'down'
-      HiddenPos[1] = HiddenPos[1] - 1
-    end
-    ActiveTile.start = pixel_pos_from_tile_pos(HiddenPos[1], HiddenPos[2])
-    ActiveTile.finish = pixel_pos_from_tile_pos(NilPos[1], NilPos[2])
-    ActiveTile.current = {unpack(ActiveTile.start)}
-  end
-  print(Direction)
-end
-
 function love.load()
   print(':::start:::')
   NilPos = locate_nil(Grid)
@@ -210,6 +170,119 @@ function love.load()
   elseif WinMediaType == 'video' then
     WinVideo = lg.newVideo('gfx/groove-man-loop10.ogv')
   end
+end
+
+local function initAnimatedMovement(direction)
+  if direction == 'none' then
+    return
+  end
+  direction = direction or Direction
+  HiddenPos = {unpack(NilPos)}
+  if direction == 'left' then
+    if NilPos[2] == #Grid[1] then
+      Direction = 'none'
+      return
+    end
+    Axis = 1
+    HiddenPos[2] = HiddenPos[2] + 1
+  elseif direction == 'right' then
+    if NilPos[2] == 1 then
+      Direction = 'none'
+      return
+    end
+    Axis = 1
+    HiddenPos[2] = HiddenPos[2] - 1
+  elseif direction == 'up' then
+    if NilPos[1] == #Grid then
+      Direction = 'none'
+      return
+    end
+    Axis = 2
+    HiddenPos[1] = HiddenPos[1] + 1
+  elseif direction == 'down' then
+    if NilPos[1] == 1 then
+      Direction = 'none'
+      return
+    end
+    Axis = 2
+    HiddenPos[1] = HiddenPos[1] - 1
+  end
+  ActiveTile.start = pixel_pos_from_tile_pos(HiddenPos[1], HiddenPos[2])
+  ActiveTile.finish = pixel_pos_from_tile_pos(NilPos[1], NilPos[2])
+  ActiveTile.current = {unpack(ActiveTile.start)}
+end
+
+local function interactPosToDirection(x, y)
+  local selectedTile = {math.floor(y/100)+1, math.floor(x/100)+1}
+  if selectedTile[1] == NilPos[1] and selectedTile[2] == NilPos[2] then
+    return 'none'
+  elseif selectedTile[1] == NilPos[1] + 1 and selectedTile[2] == NilPos[2] then
+    return 'up'
+  elseif selectedTile[1] == NilPos[1] - 1 and selectedTile[2] == NilPos[2] then
+    return 'down'
+  elseif selectedTile[1] == NilPos[1] and selectedTile[2] == NilPos[2] + 1 then
+    return 'left'
+  elseif selectedTile[1] == NilPos[1] and selectedTile[2] == NilPos[2] - 1 then
+    return 'right'
+  else
+    return 'none'
+  end
+end
+
+function love.touchpressed(_, x, y)
+  if Direction == 'none' then
+    Direction = interactPosToDirection(x, y)
+    initAnimatedMovement()
+  end
+end
+
+function love.mousepressed(x, y)
+  if Direction == 'none' then
+    Direction = interactPosToDirection(x, y)
+    print(Direction)
+    initAnimatedMovement()
+  end
+end
+
+function love.keypressed(k)
+  if k == 'escape' or k == 'q'
+  then
+    love.event.quit()
+  end
+  if Direction == 'none'
+  then
+    -- the section in this if block is a possible bug place
+    if
+      k == 'h'
+      or k == 'left'
+      or k == 'kp4'
+    then
+      Direction = 'left'
+    end
+    if
+      k == 'l'
+      or k == 'right'
+      or k == 'kp6'
+    then
+      Direction = 'right'
+    end
+    if
+      k == 'k'
+      or k == 'up'
+      or k == 'kp8'
+    then
+      Direction = 'up'
+    end
+    if
+      k == 'j'
+      or k == 'down'
+      or k == 'kp2'
+    then
+      Direction = 'down'
+    end
+    initAnimatedMovement()
+  end
+  print(Direction)
 end
 
 local function grid_logic(dt)
@@ -253,9 +326,7 @@ local function grid_logic(dt)
           MediaPieceParams = WinVideoParams
           WinVideo:play()
         end
-        print(media_width)
         media_scale = win_width / media_width
-        print(media_scale)
         MediaPieceParams.scale = media_scale
         MediaPieceParams.y_pos = win_height - media_height * media_scale
         WinTextParams.limit = win_width
