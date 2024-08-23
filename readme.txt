@@ -14,7 +14,9 @@ Running from source:
 
 Controls, two options:
   - arrows
+  - numpad arrows (or 2468)
   - vim-like motions (hjkl)
+  - touches or mouse clicks on the tiles adjacent to an empty space
 
 Goal of the game:
   In order to solve the puzzle, you need to order all the tiles correctly, so
