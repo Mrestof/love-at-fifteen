@@ -154,9 +154,11 @@ function love.load()
   print(':::start:::')
   NilPos = locate_nil(Grid)
   math.randomseed(os.time())
-  love.window.setMode(#Grid*100, #Grid[1]*100)
+  love.window.setMode(#Grid*100, #Grid[1]*100 + 50)
   MainFont = lg.setNewFont(28)
-  simulated_shuffle_grid(Grid)
+  if os.getenv('DEV') ~= '1' then simulated_shuffle_grid(Grid) end
+  for _ = 1, 3 do simple_move(Grid, 'up') end
+  for _ = 1, 3 do simple_move(Grid, 'left') end
   print_grid(Grid)
   if WinMediaType == 'animation' then
     WinAnim = Animation:new(
@@ -245,6 +247,7 @@ function love.mousepressed(x, y)
 end
 
 function love.keypressed(k)
+  if k == 'space' then Pause = not Pause end
   if k == 'escape' or k == 'q'
   then
     love.event.quit()
@@ -350,7 +353,47 @@ local function win_screen_logic(dt)
   WinAnim:update(dt)
 end
 
+MoveList = {
+  'down',
+  'down',
+  'right',
+  'up',
+  'right',
+  'down',
+  'left',
+  'up',
+  'right',
+  'right',
+  'down',
+  'down',
+  'left',
+  'up',
+  'right',
+  'down',
+  'left',
+  'up',
+  'up',
+  'up',
+  'left',
+  'left',
+}
+
+Pause = true
+Timer = 0
+CurMove = 1
+
 function love.update(dt)
+  if Pause then return end
+  if Timer > 0.2 then
+    Direction = MoveList[CurMove]
+    initAnimatedMovement(Direction)
+    if CurMove == #MoveList then
+    else
+      CurMove = CurMove + 1
+    end
+    Timer = 0
+  end
+  Timer = Timer + dt
   if GameState == 'grid' then
     grid_logic(dt)
   end
@@ -376,8 +419,8 @@ local function draw_grid(grid, spacing)
         -- 7d60ca
         lg.setColor(love.math.colorFromBytes(0x7d, 0x60, 0xca))
         lg.rectangle('fill', x, y, 100 - spacing * 2, 100 - spacing * 2)
-        lg.setColor(1, 1, 1)
-        lg.print(value, x+4, y+2)
+        --lg.setColor(1, 1, 1)
+        --lg.print(value, x+4, y+2)
       end
     end
   end
